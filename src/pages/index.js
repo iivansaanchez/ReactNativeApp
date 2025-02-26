@@ -1,0 +1,7 @@
+export {LoginScreen} from "./LoginScreen"
+export {RegisterScreen} from "./RegisterScreen"
+export {TabScreen} from "./TabScreen"
+export {AddScreen} from "./AddScreen"
+export {HomeScreen} from "./HomeScreen"
+export {PublicacionScreen} from "./PublicacionScreen"
+export {SettingsScreen} from "./SettingsScreen"
