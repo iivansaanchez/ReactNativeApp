@@ -23,7 +23,7 @@ export function SettingsScreen() {
 
     try {
       const response = await fetch(
-        "http://192.22.1.103:8080/proyecto01/incidencias/post",
+        `${config.API_URL}/incidencias/post`,
         {
           method: "POST",
           headers: {

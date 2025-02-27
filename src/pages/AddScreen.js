@@ -4,6 +4,7 @@ import Button from '../components/Button';
 import * as ImagePicker from 'expo-image-picker';
 import Modal from 'react-native-modal';
 import { auth } from '../utils/Firebase';
+import config from '../../config';
 
 export function AddScreen({ navigation, route }) {
   const [isModalVisible, setModalVisible] = useState(false);
@@ -102,7 +103,7 @@ const saveToDatabase = async (imageUrl) => {
     comentario:descripcion,
   };
   try {
-    const response = await fetch(`http://192.22.1.103:8080/proyecto01/publicaciones`, {
+    const response = await fetch(`${config.API_URL}/proyecto01/publicaciones`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

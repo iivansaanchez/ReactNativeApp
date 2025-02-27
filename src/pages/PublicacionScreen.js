@@ -4,6 +4,7 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native'; 
 import { auth } from '../utils/Firebase';
 import { ScrollView } from 'react-native-gesture-handler';
+import config from '../../config';
 
 const timeAgo = (date) => {
   const now = new Date();
@@ -45,7 +46,7 @@ export function PublicacionScreen({ route }) {
 
   const fetchPublicaciones = async () => {
     try {
-      const url = 'http://192.22.1.103:8080/proyecto01/publicaciones';
+      const url = `${config.API_URL}/publicaciones`;
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error('Error al obtener publicaciones');
@@ -62,7 +63,7 @@ export function PublicacionScreen({ route }) {
 
   const fetchComentarios = async () => {
     try {
-      const url = `http://192.22.1.103:8080/proyecto01/comentarios/${selectedPostId}`;
+      const url = `${config.API_URL}/comentarios/${selectedPostId}`;
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error('Error al obtener comentarios');
@@ -94,7 +95,7 @@ export function PublicacionScreen({ route }) {
   
       setPublicaciones(updatedPublicaciones);
   
-      const url = `http://192.22.1.103:8080/proyecto01/publicaciones/put/${id}/${userId}`;
+      const url = `${config.API_URL}/publicaciones/put/${id}/${userId}`;
       const response = await fetch(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -116,7 +117,7 @@ export function PublicacionScreen({ route }) {
     if (newComment.trim() === '') return;
 
     try {
-      const response = await fetch('http://192.22.1.103:8080/proyecto01/comentarios/put', {
+      const response = await fetch(`${config.API_URL}/comentarios/put`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

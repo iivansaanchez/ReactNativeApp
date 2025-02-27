@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity, useWindowDim
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useIsFocused } from '@react-navigation/native';
 import { auth } from '../utils/Firebase';
+import config from '../../config';
 
 const timeAgo = (date) => {
   const now = new Date();
@@ -37,7 +38,7 @@ export function HomeScreen({ navigation }) {
   const fetchPublicaciones = async () => {
     try {
       // Obtener todas las publicaciones
-      const response = await fetch('http://192.22.1.103:8080/proyecto01/publicaciones');
+      const response = await fetch(`${config.API_URL}/publicaciones`);
       let publicaciones = await response.json();
   
       let likesSet = new Set();
@@ -48,13 +49,13 @@ export function HomeScreen({ navigation }) {
         const pubId = publicaciones[i].id;
   
         // Obtener los comentarios de la publicación
-        const comentariosResponse = await fetch(`http://192.22.1.103:8080/proyecto01/comentarios/${pubId}`);
+        const comentariosResponse = await fetch(`${config.API_URL}/comentarios/${pubId}`);
         publicaciones[i].comentarios = await comentariosResponse.json() || [];
   
         // Obtener el usuario relacionado con la publicación a través del user_id
         const userId = publicaciones[i].user_id;
         if (userId) {
-          const userResponse = await fetch(`http://192.22.1.103:8080/proyecto01/users/${userId}`);
+          const userResponse = await fetch(`${config.API_URL}/users/${userId}`);
           if (userResponse.ok) {
             const userData = await userResponse.json();
             publicaciones[i].userNick = userData.nick; // Agregar el nick del usuario a la publicación
@@ -106,7 +107,7 @@ export function HomeScreen({ navigation }) {
       setPublicaciones(updatedPublicaciones);
   
       // Enviar la actualización al backend
-      await fetch(`http://192.22.1.103:8080/proyecto01/publicaciones/put/${id}/${userId}`, {
+      await fetch(`${config.API_URL}/publicaciones/put/${id}/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ like: updatedLikes }),

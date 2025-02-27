@@ -13,6 +13,7 @@ import {
 
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../utils/Firebase';
+import config from '../../config';
 
 export function RegisterScreen({navigation}) {
   const { width } = useWindowDimensions();
@@ -63,7 +64,7 @@ export function RegisterScreen({navigation}) {
       };
 
       // Enviar datos a la API
-      const apiUrl = 'http://192.22.1.103:8080/proyecto01/users';
+      const apiUrl = `${config.API_URL}/users`;
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
