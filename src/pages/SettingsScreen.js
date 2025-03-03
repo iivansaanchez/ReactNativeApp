@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {View,Text,StyleSheet,TouchableOpacity,TextInput,Image,Alert} from "react-native";
+import config from "../../config";
 
 export function SettingsScreen() {
   const [numeroEquipo, setnumeroEquipo] = useState("");

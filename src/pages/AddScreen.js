@@ -103,7 +103,7 @@ const saveToDatabase = async (imageUrl) => {
     comentario:descripcion,
   };
   try {
-    const response = await fetch(`${config.API_URL}/proyecto01/publicaciones`, {
+    const response = await fetch(`${config.API_URL}/publicaciones`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -127,7 +127,6 @@ const handleSubmit = async () => {
     // Subir imagen a Cloudinary
     await uploadToCloudinary(selectedImage);
     alert("Publicación realizada con éxito.");
-    navigation.navigate('HomeScreen');
   } catch (error) {
     console.error("Error al publicar:", error);
     alert("Hubo un error al realizar la publicación. Intenta nuevamente.");
@@ -263,7 +262,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 15,
     fontSize: 12,
-    color: '#23272A',
+    color: '#DFDFDF',
     marginBottom: 20,
   },
   foot: {

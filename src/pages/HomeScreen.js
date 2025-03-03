@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { 
+  View, Text, StyleSheet, Image, FlatList, TouchableOpacity, 
+  SafeAreaView, useWindowDimensions 
+} from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useIsFocused } from '@react-navigation/native';
 import { auth } from '../utils/Firebase';
@@ -8,12 +11,10 @@ import config from '../../config';
 const timeAgo = (date) => {
   const now = new Date();
   const diff = now - new Date(date);
-
   const seconds = Math.floor(diff / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
-
   if (days > 0) return `Hace ${days} día${days > 1 ? 's' : ''}`;
   if (hours > 0) return `Hace ${hours} hora${hours > 1 ? 's' : ''}`;
   if (minutes > 0) return `Hace ${minutes} minuto${minutes > 1 ? 's' : ''}`;
@@ -24,71 +25,60 @@ export function HomeScreen({ navigation }) {
   const { width, height } = useWindowDimensions();
   const [publicaciones, setPublicaciones] = useState([]);
   const [userLikes, setUserLikes] = useState(new Set());
-  const [nick, setNick] = useState(null);
   const userId = auth.currentUser?.uid; 
-  
-  const isFocused = useIsFocused(); // Hook para saber si la pantalla está activa
+  const isFocused = useIsFocused();
 
   useEffect(() => {
     if (isFocused) {
-      fetchPublicaciones(); // Recargar publicaciones cuando la pantalla esté en foco
+      fetchPublicaciones();
     }
   }, [isFocused]);
 
   const fetchPublicaciones = async () => {
     try {
-      // Obtener todas las publicaciones
       const response = await fetch(`${config.API_URL}/publicaciones`);
       let publicaciones = await response.json();
-  
       let likesSet = new Set();
-      const currentUserID = auth.currentUser?.uid; // ID del usuario actual
-  
-      // Recorrer las publicaciones para obtener los comentarios, el nick y verificar "Me gusta"
+      //Usuario registrado
+      const currentUserID = auth.currentUser?.uid;
+
       for (let i = 0; i < publicaciones.length; i++) {
         const pubId = publicaciones[i].id;
-  
-        // Obtener los comentarios de la publicación
         const comentariosResponse = await fetch(`${config.API_URL}/comentarios/${pubId}`);
         publicaciones[i].comentarios = await comentariosResponse.json() || [];
-  
-        // Obtener el usuario relacionado con la publicación a través del user_id
+        //Usuario que hizo la publicacion
         const userId = publicaciones[i].user_id;
+
         if (userId) {
           const userResponse = await fetch(`${config.API_URL}/users/${userId}`);
           if (userResponse.ok) {
             const userData = await userResponse.json();
-            publicaciones[i].userNick = userData.nick; // Agregar el nick del usuario a la publicación
+            publicaciones[i].userNick = userData.nick;
           }
         }
-  
-        // Verificar si el usuario actual ha dado "Me gusta" a esta publicación
+
         if (publicaciones[i].like.includes(currentUserID)) {
           likesSet.add(pubId);
         }
-        // Asegurar que `likes` almacene la cantidad correcta de Me Gusta
         publicaciones[i].likes = publicaciones[i].like ? publicaciones[i].like.length : 0;
       }
-  
-      // Actualizar el estado con las publicaciones y los likes del usuario
+
       setPublicaciones(publicaciones);
       setUserLikes(likesSet);
-  
     } catch (error) {
       console.error('Error al obtener publicaciones:', error);
     }
   };
-  
+
   const handleLike = async (id) => {
     try {
       const pubIndex = publicaciones.findIndex((pub) => pub.id === id);
+      //... hace copia antes de modificar
       const updatedPublicaciones = [...publicaciones];
       const pub = updatedPublicaciones[pubIndex];
-  
       let updatedLikes = [...pub.like];
-  
+
       if (userLikes.has(id)) {
-        // Si ya ha dado "Me gusta", quitar el user_id
         updatedLikes = updatedLikes.filter((uid) => uid !== userId);
         setUserLikes((prev) => {
           const newLikes = new Set(prev);
@@ -96,17 +86,14 @@ export function HomeScreen({ navigation }) {
           return newLikes;
         });
       } else {
-        // Si no ha dado "Me gusta", añadir el user_id
         updatedLikes.push(userId);
         setUserLikes((prev) => new Set(prev).add(id));
       }
-  
-      // Actualizar el estado local
+
       pub.like = updatedLikes;
-      pub.likes = updatedLikes.length; // Actualizar contador de "Me gusta"
+      pub.likes = updatedLikes.length;
       setPublicaciones(updatedPublicaciones);
-  
-      // Enviar la actualización al backend
+
       await fetch(`${config.API_URL}/publicaciones/put/${id}/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -117,7 +104,6 @@ export function HomeScreen({ navigation }) {
     }
   };  
 
-
   const renderItem = ({ item }) => (
     <View key={item.id} style={styles.publicacion}>
       <TouchableOpacity onPress={() => navigation.navigate('PublicacionScreen', { selectedPostId: item.id, nick: item.userNick })}>
@@ -125,7 +111,7 @@ export function HomeScreen({ navigation }) {
       </TouchableOpacity>
       <View style={styles.overlay}>
         <View style={styles.userDetails}>
-          <Image source={require('../../assets/perfil.png')} style={[styles.userPhoto, { width: width * 0.15, height: width * 0.15, borderRadius: width * 0.08, marginTop: 10 }]} />
+          <Image source={require('../../assets/perfil.png')} style={[styles.userPhoto, { width: width * 0.15, height: width * 0.15, borderRadius: width * 0.08 }]} />
           <View style={styles.userTextContainer}>
             <Text style={styles.publishedBy}>Publicado por</Text>
             <Text style={styles.userName}>{item.userNick || 'Cargando...'}</Text>
@@ -148,7 +134,7 @@ export function HomeScreen({ navigation }) {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeContainer}>
       <Image source={require("../../assets/cabecera.png")} style={[styles.logo, { height: height * 0.1 }]} />
       <FlatList
         data={publicaciones}
@@ -157,12 +143,12 @@ export function HomeScreen({ navigation }) {
         contentContainerStyle={styles.imageContainer}
         ListEmptyComponent={<Text style={styles.noPublicaciones}>No hay publicaciones disponibles.</Text>}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#23272A', paddingTop: 30 },
+  safeContainer: { flex: 1, backgroundColor: '#23272A' },
   imageContainer: { padding: 10, flexGrow: 1 },
   publicacion: { marginBottom: 20, backgroundColor: '#23272A', padding: 10, position: 'relative' },
   image: { width: '100%', borderRadius: 6 },

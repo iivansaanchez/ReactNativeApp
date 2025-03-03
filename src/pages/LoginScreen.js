@@ -6,9 +6,12 @@ import {
   TouchableOpacity, 
   StyleSheet, 
   Image, 
-  ScrollView, 
-  SafeAreaView,
-  useWindowDimensions
+  SafeAreaView, 
+  KeyboardAvoidingView, 
+  TouchableWithoutFeedback, 
+  Keyboard,
+  useWindowDimensions,
+  Platform
 } from 'react-native';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { app } from '../utils/Firebase';
@@ -18,77 +21,82 @@ export function LoginScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
   
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
 
   const handleLogin = () => {
     const auth = getAuth(app);
     signInWithEmailAndPassword(auth, email, password)
-      .then(() => {
-        navigation.navigate('TabScreen');
-      })
-      .catch((error) => {
-        setMessage('Error de inicio de sesión: ' + error.message);
-      });
+      .then(() => navigation.navigate('TabScreen'))
+      .catch((error) => setMessage('Error de inicio de sesión: ' + error.message));
   };
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-      <ScrollView 
-        contentContainerStyle={styles.container} 
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.flexContainer}
       >
-        <View style={styles.logoSection}>
-          <Image
-            source={require('../../assets/vedrunaReact.png')}
-            style={[styles.logo, { width: width * 0.5, height: width * 0.5 }]}
-          />
-        </View>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.container}>
+            {/* Logo */}
+            <View style={styles.logoSection}>
+              <Image
+                source={require('../../assets/vedrunaReact.png')}
+                style={[styles.logo, { width: width * 0.5, height: width * 0.5 }]}
+              />
+            </View>
 
-        <View style={styles.titleSection}>
-          <Text style={styles.title}>VEDRUNA</Text>
-          <Text style={styles.title}>EDUCACIÓN</Text>
-        </View>
+            {/* Título */}
+            <View style={styles.titleSection}>
+              <Text style={styles.title}>VEDRUNA</Text>
+              <Text style={styles.title}>EDUCACIÓN</Text>
+            </View>
 
-        <View style={styles.formSection}>
-          <TextInput
-            style={styles.input}
-            placeholder="Introduzca su correo o nick..."
-            placeholderTextColor="#666"
-            value={email}
-            onChangeText={setEmail}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Introduzca su contraseña..."
-            placeholderTextColor="#666"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-          <Text style={styles.forgotPassword}>¿Olvidaste la contraseña?</Text>
-        </View>
+            {/* Formulario */}
+            <View style={styles.formSection}>
+              <TextInput
+                style={styles.input}
+                placeholder="Introduzca su correo o nick..."
+                placeholderTextColor="#666"
+                value={email}
+                onChangeText={setEmail}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Introduzca su contraseña..."
+                placeholderTextColor="#666"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+              />
+              <Text style={styles.forgotPassword}>¿Olvidaste la contraseña?</Text>
+            </View>
 
-        <View style={styles.buttonSection}>
-          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-            <Text style={styles.loginButtonText}>Log in</Text>
-          </TouchableOpacity>
-        </View>
+            {/* Botón de Login */}
+            <View style={styles.buttonSection}>
+              <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+                <Text style={styles.loginButtonText}>Log in</Text>
+              </TouchableOpacity>
+            </View>
 
-        <View style={styles.messageSection}>
-          <Text style={styles.messageText}>{message}</Text>
-        </View>
+            {/* Mensajes */}
+            <View style={styles.messageSection}>
+              <Text style={styles.messageText}>{message}</Text>
+            </View>
 
-        <View style={styles.footer}>
-          <View style={styles.line}></View>
-          <View style={styles.createAccountContainer}>
-            <Text style={styles.createAccountText}>¿No tienes cuenta?</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('RegisterScreen')}>
-              <Text style={styles.createAccountLink}> Crear cuenta</Text>
-            </TouchableOpacity>
+            {/* Crear cuenta */}
+            <View style={styles.footer}>
+              <View style={styles.line}></View>
+              <View style={styles.createAccountContainer}>
+                <Text style={styles.createAccountText}>¿No tienes cuenta?</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('RegisterScreen')}>
+                  <Text style={styles.createAccountLink}> Crear cuenta</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -98,14 +106,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1C1F26',
   },
+  flexContainer: {
+    flex: 1,
+  },
   container: {
-    flexGrow: 1,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 40,
   },
   logoSection: {
-    marginBottom: 20,
+    marginBottom: 30,
+    marginTop: 30
   },
   logo: {
     resizeMode: 'contain',
@@ -127,7 +139,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     borderRadius: 8,
     padding: 12,
-    marginBottom: 15,
+    marginBottom: 20,
     fontSize: 16,
   },
   forgotPassword: {
@@ -140,6 +152,7 @@ const styles = StyleSheet.create({
     width: '80%',
     alignItems: 'center',
     marginBottom: 100,
+    marginTop: 20
   },
   loginButton: {
     backgroundColor: '#9FC63B',
@@ -188,3 +201,4 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 });
+
