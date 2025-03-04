@@ -28,9 +28,13 @@ export function PublicacionScreen({ route }) {
   const [userLikes, setUserLikes] = useState(new Set());
   const [modalVisible, setModalVisible] = useState(false);
   const [newComment, setNewComment] = useState('');
-  const userId = auth.currentUser.uid;
   const navigation = useNavigation(); 
   const [userName, setUserName] = useState('');
+
+  //SelectedPostId es el id de la publicacion
+  //Nick es el nick del usuario que ha añadido la publicacion
+  //UserID es el id del usuario logueado en la app
+  const userId = auth.currentUser.uid;
   const { selectedPostId, nick } = route.params;
 
 
@@ -39,80 +43,96 @@ export function PublicacionScreen({ route }) {
     if (currentUser) {
       setUserName(currentUser.displayName || currentUser.email || 'Usuario');
     }
-
     fetchPublicaciones();
-    fetchComentarios();
-  }, []);
+  }, []);  
 
   const fetchPublicaciones = async () => {
     try {
-      const url = `${config.API_URL}/publicaciones`;
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Error al obtener publicaciones');
+      const response = await fetch(`${config.API_URL}/publicaciones`);
+      let publicaciones = await response.json();
+      let likesSet = new Set();
+      const currentUserID = auth.currentUser?.uid;
+  
+      for (let i = 0; i < publicaciones.length; i++) {
+        const pubId = publicaciones[i].id;
+        const comentariosResponse = await fetch(`${config.API_URL}/comentarios/${pubId}`);
+        const comentarios = await comentariosResponse.json() || [];
+  
+        // Obtener los detalles de usuario para cada comentario
+        for (let j = 0; j < comentarios.length; j++) {
+          const userId = comentarios[j].user_id;
+          if (userId) {
+            const userResponse = await fetch(`${config.API_URL}/users/${userId}`);
+            if (userResponse.ok) {
+              const userData = await userResponse.json();
+              comentarios[j].userNick = userData.nick;
+              comentarios[j].userPhoto = userData.photo_url; // Asumiendo que la API devuelve la URL de la foto de perfil
+            }
+          }
+        }
+  
+        publicaciones[i].comentarios = comentarios;
+        
+        const userId = publicaciones[i].user_id;
+        if (userId) {
+          const userResponse = await fetch(`${config.API_URL}/users/${userId}`);
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            console.log(userData);
+            publicaciones[i].userNick = userData.nick;
+            publicaciones[i].userPhoto = userData.profile_picture;
+          }
+        }
+  
+        if (publicaciones[i].like.includes(currentUserID)) {
+          likesSet.add(pubId);
+        }
+        publicaciones[i].likes = publicaciones[i].like ? publicaciones[i].like.length : 0;
       }
-
-      const data = await response.json();
-      setPublicaciones(data || []);
+  
+      setPublicaciones(publicaciones);
+      setUserLikes(likesSet);
+      setLoading(false);
     } catch (error) {
       console.error('Error al obtener publicaciones:', error);
-    } finally {
       setLoading(false);
     }
-  };
+  };  
 
-  const fetchComentarios = async () => {
-    try {
-      const url = `${config.API_URL}/comentarios/${selectedPostId}`;
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Error al obtener comentarios');
-      }
-
-      const data = await response.json();
-      setComentarios(data || []);
-    } catch (error) {
-      console.error('Error al obtener comentarios:', error);
-    }
-  };
   const handleLike = async (id) => {
     try {
       const pubIndex = publicaciones.findIndex((pub) => pub.id === id);
+      //... hace copia antes de modificar
       const updatedPublicaciones = [...publicaciones];
       const pub = updatedPublicaciones[pubIndex];
-  
+      let updatedLikes = [...pub.like];
+
       if (userLikes.has(id)) {
-        pub.likes -= 1;
+        updatedLikes = updatedLikes.filter((uid) => uid !== userId);
         setUserLikes((prev) => {
           const newLikes = new Set(prev);
           newLikes.delete(id);
           return newLikes;
         });
       } else {
-        pub.likes = (pub.likes || 0) + 1;
+        updatedLikes.push(userId);
         setUserLikes((prev) => new Set(prev).add(id));
       }
-  
+
+      pub.like = updatedLikes;
+      pub.likes = updatedLikes.length;
       setPublicaciones(updatedPublicaciones);
-  
-      const url = `${config.API_URL}/publicaciones/put/${id}/${userId}`;
-      const response = await fetch(url, {
+
+      await fetch(`${config.API_URL}/publicaciones/put/${id}/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          likes: pub.likes,
-        }),
+        body: JSON.stringify({ like: updatedLikes }),
       });
-  
-      if (!response.ok) {
-        throw new Error('Error al actualizar el like');
-      }
     } catch (error) {
       console.error('Error al actualizar el like:', error);
     }
   };
   
-
   const handlePublishComment = async () => {
     if (newComment.trim() === '') return;
 
@@ -147,82 +167,88 @@ export function PublicacionScreen({ route }) {
   const selectedPost = publicaciones.find((pub) => pub.id === selectedPostId);
 
   return (
-    <ScrollView style={styles.container}>
-    <View style={styles.header}>
-      <TouchableOpacity onPress={() => navigation.goBack()}>  
-        <Icon name="arrow-left" size={20} color="#9FC63B" />
-      </TouchableOpacity>
-      <View style={styles.userInfo}>
-        <View style={styles.userDetails}>
-          <Image
-            source={require('../../assets/perfil.png')}
-            style={styles.userPhoto}
-          />
-          <View>
-            <Text style={styles.publishedBy}>Publicado por</Text>
-            <Text style={styles.userName}>{nick}</Text>
+    <View style={{ flex: 1 }}>
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>  
+            <Icon name="arrow-left" size={20} color="#9FC63B" />
+          </TouchableOpacity>
+          <View style={styles.userInfo}>
+            <View style={styles.userDetails}>
+              <Image
+                source={require('../../assets/perfil.png')}
+                style={styles.userPhoto}
+              />
+              <View>
+                <Text style={styles.publishedBy}>Publicado por</Text>
+                <Text style={styles.userName}>{nick}</Text>
+              </View>
+            </View>
           </View>
         </View>
-      </View>
-    </View>
-
-    {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#ffffff" />
-        </View>
-      ) : selectedPost ? (
-        <View style={styles.publicacion}>
-          <Image
-            source={{ uri: selectedPost.image_url }}
-            style={styles.image}
-            onError={(e) =>
-              console.log('Error al cargar la imagen:', e.nativeEvent.error)
-            }
-          />
-          <View style={styles.likeContainer}>
-          <TouchableOpacity onPress={() => handleLike(selectedPost.id)}>
-            <Icon
-              name={userLikes.has(selectedPost.id) ? 'heart' : 'heart-o'}
-              size={24}
-              color={userLikes.has(selectedPost.id) ? '#9FC63B' : '#ffffff'}
+  
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#ffffff" />
+          </View>
+        ) : selectedPost ? (
+          <View style={styles.publicacion}>
+            <Image
+              source={{ uri: selectedPost.image_url }}
+              style={styles.image}
+              onError={(e) =>
+                console.log('Error al cargar la imagen:', e.nativeEvent.error)
+              }
             />
-          </TouchableOpacity>
-            <Text style={styles.likeCount}>{selectedPost.likes || 0} Me gusta</Text>
-          </View>
-          <Text style={styles.title}>{selectedPost.titulo}</Text>
-          <Text style={styles.description}>{selectedPost.comentario}</Text>
-          <Text style={styles.date}>{timeAgo(selectedPost.createdAt)}</Text>
-          
-
-
-          {/* Título de comentarios */}
-          <Text style={styles.commentsTitle}>COMENTARIOS</Text>
-
-          {/* Mostrar comentarios */}
-          <FlatList
-            data={comentarios}
-            renderItem={({ item }) => (
-              <View style={styles.commentContainer}>
-                <Text style={styles.commentUser}>{item.user}</Text>
-                <Text style={styles.commentText}>{item.texto}</Text>
-                <Text style={styles.commentText}>{item.comentario}</Text>
+            <View style={styles.likeContainer}>
+              <TouchableOpacity onPress={() => handleLike(selectedPost.id)}>
+                <Icon
+                  name={userLikes.has(selectedPost.id) ? 'heart' : 'heart-o'}
+                  size={24}
+                  color={userLikes.has(selectedPost.id) ? '#9FC63B' : '#ffffff'}
+                />
+              </TouchableOpacity>
+              <Text style={styles.likeCount}>{selectedPost.likes || 0} Me gusta</Text>
+            </View>
+            <Text style={styles.title}>{selectedPost.titulo}</Text>
+            <Text style={styles.description}>{selectedPost.comentario}</Text>
+            <Text style={styles.date}>{timeAgo(selectedPost.createdAt)}</Text>
+  
+            <Text style={styles.commentsTitle}>COMENTARIOS</Text>
+  
+            <FlatList
+              data={selectedPost.comentarios}
+              renderItem={({ item }) => (
+                <View style={styles.commentContainer}>
+                  <View style={styles.commentHeader}>
+                    <Image 
+                      source={{ uri: selectedPost.userPhoto || '../../assets/perfil.png' }} 
+                      style={styles.commentUserPhoto} 
+                    />
+                    <View>
+                      <Text style={styles.commentUser}>{item.userNick || 'Usuario Anónimo'}</Text>
+                      <Text style={styles.commentText}>{item.comentario}</Text>
+                    </View>
+                  </View>
                 </View>
-            )}
-            keyExtractor={(item) => item.id.toString()}
-          />
-        </View>
-      ) : (
-        <Text style={styles.noPublicaciones}>Publicación no encontrada.</Text>
-      )}
-
-          <TouchableOpacity 
-            style={styles.floatingButton} 
-            onPress={() => setModalVisible(true)}
-          >
-            <Image source={require("../../assets/botonComentarios.png")} style={styles.floatingImage} />
-          </TouchableOpacity>
-      
-      
+              )}
+              keyExtractor={(item) => item.id.toString()}
+            />
+          </View>
+        ) : (
+          <Text style={styles.noPublicaciones}>Publicación no encontrada.</Text>
+        )}
+      </ScrollView>
+  
+      {/* Botón flotante de añadir comentario */}
+      <TouchableOpacity 
+        style={styles.floatingButton} 
+        onPress={() => setModalVisible(true)}
+      >
+        <Image source={require("../../assets/botonComentarios.png")} style={styles.floatingImage} />
+      </TouchableOpacity>
+  
+      {/* Modal de añadir comentario */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -252,20 +278,20 @@ export function PublicacionScreen({ route }) {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+    </View>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-     flex: 1,
-     backgroundColor: '#23272A'
-     },
-     header: {
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#23272A'
+    },
+    header: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: '#23272A',
-      marginTop:60,
+      marginTop: 60,
       padding: 10,
       borderBottomWidth: 1,
       borderBottomColor: '#333',
@@ -339,32 +365,32 @@ const styles = StyleSheet.create({
       marginTop: 20,
     },
     commentContainer: {
-      marginBottom: 15,
       backgroundColor: '#2f353a',
       padding: 10,
       borderRadius: 5,
+      marginTop: 10
+    },
+    commentHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    commentUserPhoto: {
+      width: 70,
+      height: 70,
+      borderRadius: 50,
+      marginRight: 20,
+      borderWidth: 2,
+      borderColor: '#9FC63B',
     },
     commentUser: {
       color: '#9FC63B',
       fontWeight: 'bold',
-      fontSize: 14,
+      fontSize: 17,
     },
     commentText: {
       color: '#ffffff',
       fontSize: 14,
       marginTop: 5,
-    },
-    commentDate: {
-      color: '#888888',
-      fontSize: 12,
-      fontStyle: 'italic',
-      marginTop: 5,
-    },
-    loadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#23272A',
     },
     noPublicaciones: {
       color: '#ffffff',
@@ -379,95 +405,41 @@ const styles = StyleSheet.create({
       backgroundColor: '#9FC63B',
       borderRadius: 50,
       padding: 10,
-      zIndex: 999,
+      elevation: 5,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
     },
     floatingImage: {
-      width: 60,
-      height: 60,
+      width: 50,
+      height: 50,
     },
-    commentsTitle: {
+    modalContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.8)'
+    },
+    modalContent: {
+      width: '90%',
+      backgroundColor: '#111',
+      padding: 20,
+      borderRadius: 10
+    },
+    modalTitle: {
       color: '#9FC63B',
       fontSize: 18,
       fontWeight: 'bold',
-      marginTop: 20,
+      marginBottom: 10
     },
-    commentContainer: {
-      marginBottom: 15,
-      backgroundColor: '#2f353a',
+    textInput: {
+      height: 300,
+      backgroundColor: '#333',
+      color: '#fff',
       padding: 10,
       borderRadius: 5,
-    },
-    commentUser: {
-      color: '#9FC63B',
-      fontWeight: 'bold',
-      fontSize: 14,
-    },
-    commentText: {
-      color: '#ffffff',
-      fontSize: 14,
-      marginTop: 5,
-    },
-    commentDate: {
-      color: '#ffffff',
-      fontSize: 12,
-      marginTop: 5,
-    },
-  floatingButton: { 
-      position: 'absolute',
-      bottom: 20,
-      right: 20,
-      borderRadius: 50, 
-      padding: 10 
-    },
-  floatingImage: { 
-      width: 60,
-      height: 60 },
-  modalContainer: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    backgroundColor: 'rgba(0,0,0,0.8)' 
-  },
-  modalContent: { 
-    width: '90%', 
-    backgroundColor: '#111', 
-    padding: 20, 
-    borderRadius: 10 },
-  modalTitle: { 
-    color: '#9FC63B', 
-    fontSize: 18, 
-    fontWeight: 'bold', 
-    marginBottom: 10 },
-  textInput: { 
-    height: 300, 
-    backgroundColor: '#333', 
-    color: '#fff', 
-    padding: 10, 
-    borderRadius: 5, 
-    textAlignVertical: 'top' },
-  modalButtonsContainer: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    marginTop: 20 },
-  cancelButton: { 
-    flex: 1, 
-    backgroundColor: '', 
-    padding: 10, 
-    borderRadius: 5, 
-    marginRight: 5, 
-    alignItems: 'center' },
-  cancelButtonText: { 
-    color: '#fff', 
-    fontWeight: 'bold' },
-  publishButton: { 
-    flex: 1,
-    padding: 10, 
-    borderWidth: 2,
-    borderColor: '#9FC63B',
-    borderRadius: 5,
-    marginLeft: 5, 
-    alignItems: 'center' },
-  publishButtonText: { 
-    color: '#fff', 
-    fontWeight: 'bold' }
-});
+      textAlignVertical: 'top'
+    }
+  });
+  

@@ -4,9 +4,21 @@ import { Ionicons } from "@expo/vector-icons"; // Para los íconos de la barra d
 import { HomeScreen } from "./HomeScreen";
 import { SettingsScreen } from "./SettingsScreen";
 import { AddScreen } from "./AddScreen";
+import { createStackNavigator } from "@react-navigation/stack";
+import { PublicacionScreen } from "./PublicacionScreen";
 
 export function TabScreen() {
   const Tab = createBottomTabNavigator();
+  const Stack = createStackNavigator();
+
+  function AddStack(){
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="HomeScreen" component={HomeScreen} />
+        <Stack.Screen name="PublicacionScreen" component={PublicacionScreen} />
+      </Stack.Navigator>
+    )
+  }
 
   //TabNavigator crea la barra de navegacion inferior
   //TabScreen sirve para definir las pantallas de navegacion posibles dentro de la navbar
@@ -21,7 +33,7 @@ export function TabScreen() {
     >
       <Tab.Screen
         name="Publicaciones"
-        component={HomeScreen}
+        component={AddStack}
 
         options={{
           tabBarIcon: ({ color, size }) => (
