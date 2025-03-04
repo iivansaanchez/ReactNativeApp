@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, FlatList, ActivityIndicator, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, Image, FlatList, ActivityIndicator, TouchableOpacity, Modal, TextInput,TouchableWithoutFeedback, Keyboard, SafeAreaView } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native'; 
 import { auth } from '../utils/Firebase';
@@ -166,9 +166,10 @@ export function PublicacionScreen({ route }) {
 
   const selectedPost = publicaciones.find((pub) => pub.id === selectedPostId);
 
+  const flatListRef = React.useRef();
+
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>  
             <Icon name="arrow-left" size={20} color="#9FC63B" />
@@ -217,6 +218,7 @@ export function PublicacionScreen({ route }) {
             <Text style={styles.commentsTitle}>COMENTARIOS</Text>
   
             <FlatList
+              ref={flatListRef}  // Asigna la referencia
               data={selectedPost.comentarios}
               renderItem={({ item }) => (
                 <View style={styles.commentContainer}>
@@ -233,12 +235,12 @@ export function PublicacionScreen({ route }) {
                 </View>
               )}
               keyExtractor={(item) => item.id.toString()}
+              onContentSizeChange={() => flatListRef.current.scrollToEnd({ animated: true })}  // Desplaza hacia abajo
             />
           </View>
         ) : (
           <Text style={styles.noPublicaciones}>Publicación no encontrada.</Text>
         )}
-      </ScrollView>
   
       {/* Botón flotante de añadir comentario */}
       <TouchableOpacity 
@@ -255,19 +257,21 @@ export function PublicacionScreen({ route }) {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Comentario:</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Máx 500 caracteres"
-              placeholderTextColor="#888"
-              multiline
-              maxLength={500}
-              value={newComment}
-              onChangeText={setNewComment}
-            />
-            <View style={styles.modalButtonsContainer}>
+        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Comentario:</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Máx 500 caracteres"
+                placeholderTextColor="#888"
+                multiline
+                maxLength={500}
+                value={newComment}
+                onChangeText={setNewComment}
+                onSubmitEditing={() => Keyboard.dismiss()}
+              />
+              <View style={styles.modalButtonsContainer}>
               <TouchableOpacity style={styles.cancelButton} onPress={() => setModalVisible(false)}>
                 <Text style={styles.cancelButtonText}>CANCELAR</Text>
               </TouchableOpacity>
@@ -275,8 +279,9 @@ export function PublicacionScreen({ route }) {
                 <Text style={styles.publishButtonText}>PUBLICAR</Text>
               </TouchableOpacity>
             </View>
+            </View>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </View>
   );
@@ -425,7 +430,9 @@ export function PublicacionScreen({ route }) {
       width: '90%',
       backgroundColor: '#111',
       padding: 20,
-      borderRadius: 10
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: '#9FC63B',
     },
     modalTitle: {
       color: '#9FC63B',
@@ -440,6 +447,39 @@ export function PublicacionScreen({ route }) {
       padding: 10,
       borderRadius: 5,
       textAlignVertical: 'top'
+    },
+    modalButtonsContainer: {
+      flexDirection: 'row',  // Esto alinea los botones de manera horizontal
+      justifyContent: 'space-between',  // Alinea los botones a los extremos
+      width: '100%',  // Asegura que los botones ocupen todo el ancho disponible
+      marginTop: 15,  // Añade algo de espacio entre el campo de texto y los botones
+    },
+    cancelButton: { 
+      padding: 10, 
+      borderRadius: 5, 
+      marginRight: 5, 
+      alignItems: 'left', 
+      color: '#fff',
+      width: '48%',  
+    },
+    cancelButtonText: { 
+      color: '#fff',
+      fontWeight: 'bold',
+      textAlign: 'center',    
+    },
+    publishButton: { 
+      padding: 10, 
+      borderWidth: 2,
+      borderColor: '#9FC63B',
+      borderRadius: 5,
+      marginLeft: 5, 
+      alignItems: 'right', 
+      width: '48%',
+    },
+    publishButtonText: { 
+      color: '#fff', // Asegura que el texto sea blanco
+      fontWeight: 'bold',
+      textAlign: 'center',
     }
   });
   
