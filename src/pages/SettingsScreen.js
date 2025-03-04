@@ -1,12 +1,33 @@
-import React, { useState } from "react";
-import {View,Text,StyleSheet,TouchableOpacity,TextInput,Image,Alert} from "react-native";
+import React, { useState, useEffect } from "react";
+import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, TextInput, Image, Alert, FlatList } from "react-native";
 import config from "../../config";
 
 export function SettingsScreen() {
-  const [numeroEquipo, setnumeroEquipo] = useState("");
+  const [incidencias, setIncidencias] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [numeroEquipo, setNumeroEquipo] = useState("");
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [showIncidentForm, setShowIncidentForm] = useState(false);
+
+  useEffect(() => {
+    fetchIncidencias();
+  }, []);
+
+  const fetchIncidencias = async () => {
+    try {
+      const response = await fetch(`${config.API_URL}/incidencias`);
+      if (!response.ok) {
+        throw new Error(`Error al obtener las incidencias: ${response.status}`);
+      }
+      const data = await response.json();
+      setIncidencias(data);
+    } catch (error) {
+      console.error("Error al obtener incidencias:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!numeroEquipo || !titulo || !descripcion) {
@@ -23,101 +44,85 @@ export function SettingsScreen() {
     };
 
     try {
-      const response = await fetch(
-        `${config.API_URL}/incidencias/post`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(incidencia),
-        }
-      );
+      const response = await fetch(`${config.API_URL}/incidencias/post`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(incidencia),
+      });
 
       if (!response.ok) {
         throw new Error(`Error al procesar la incidencia: ${response.status}`);
       }
 
-      Alert.alert(
-        "Incidencia enviada",
-        "La incidencia se ha guardado correctamente en la base de datos y enviado el correo",
-        [
-          {
-            text: "Aceptar",
-            onPress: () => {
-              setnumeroEquipo("");
-              setTitulo("");
-              setDescripcion("");
-              setShowIncidentForm(false);
-            },
+      Alert.alert("Incidencia enviada", "Se ha guardado correctamente.", [
+        {
+          text: "Aceptar",
+          onPress: () => {
+            setNumeroEquipo("");
+            setTitulo("");
+            setDescripcion("");
+            setShowIncidentForm(false);
+            fetchIncidencias(); // Recargar incidencias después de enviar una nueva
           },
-        ]
-      );
+        },
+      ]);
     } catch (error) {
       console.error("Error al procesar la incidencia:", error);
       Alert.alert("Error", error.message);
     }
   };
 
-  const handleAddIncident = () => {
-    setShowIncidentForm(true);
-  };
-
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.header}>INCIDENCIAS</Text>
 
       <View style={styles.incidentContainer}>
-        <View style={styles.incidentItem}>
-          <Text style={styles.incidentTitle}>TÍTULO DE INCIDENCIA</Text>
-          <Text style={[styles.incidentStatus, styles.solucionado]}>
-            SOLUCIONADO
-          </Text>
-        </View>
-        <View style={styles.incidentItem}>
-          <Text style={styles.incidentTitle}>TÍTULO DE INCIDENCIA</Text>
-          <Text style={[styles.incidentStatus, styles.tramite]}>EN TRÁMITE</Text>
-        </View>
-        <View style={styles.incidentItem}>
-          <Text style={styles.incidentTitle}>TÍTULO DE INCIDENCIA</Text>
-          <Text style={[styles.incidentStatus, styles.denegado]}>DENEGADA</Text>
-        </View>
+        {loading ? (
+          <Text style={styles.loadingText}>Cargando incidencias...</Text>
+        ) : incidencias.length === 0 ? (
+          <Text style={styles.noIncidentsText}>No hay incidencias registradas.</Text>
+        ) : (
+          <FlatList
+            data={incidencias}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <View style={styles.incidentItem}>
+                <Text style={styles.incidentTitle}>{item.titulo}</Text>
+                <Text
+                  style={[
+                    styles.incidentStatus,
+                    item.estado === "Solucionado"
+                      ? styles.solucionado
+                      : item.estado === "En trámite"
+                      ? styles.tramite
+                      : styles.denegado,
+                  ]}
+                >
+                  {item.estado}
+                </Text>
+              </View>
+            )}
+          />
+        )}
       </View>
 
-      <TouchableOpacity style={styles.addButton} onPress={handleAddIncident}>
+      <TouchableOpacity style={styles.addButton} onPress={() => setShowIncidentForm(true)}>
         <Text style={styles.addButtonText}>+</Text>
       </TouchableOpacity>
 
       {showIncidentForm && (
         <View style={styles.incidentFormContainer}>
-          <Text style={styles.incidentTitleForm}>INCIDENCIA</Text>
+          <Text style={styles.incidentTitleForm}>Nueva Incidencia</Text>
 
           <View style={styles.imageContainer}>
-            <Image
-              source={require("../../assets/imageAdd.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <Image source={require("../../assets/imageAdd.png")} style={styles.logo} resizeMode="contain" />
           </View>
 
           <Text style={styles.label}>Nº del equipo:</Text>
-          <TextInput
-            style={styles.input}
-            maxLength={40}
-            placeholderTextColor="#888"
-            value={numeroEquipo}
-            onChangeText={setnumeroEquipo}
-          />
+          <TextInput style={styles.input} maxLength={40} placeholderTextColor="#888" value={numeroEquipo} onChangeText={setNumeroEquipo} />
 
           <Text style={styles.label}>Título:</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Máx. 40 Caracteres"
-            maxLength={40}
-            placeholderTextColor="#888"
-            value={titulo}
-            onChangeText={setTitulo}
-          />
+          <TextInput style={styles.input} placeholder="Máx. 40 Caracteres" maxLength={40} placeholderTextColor="#888" value={titulo} onChangeText={setTitulo} />
 
           <Text style={styles.label}>Descripción del problema:</Text>
           <TextInput
@@ -128,8 +133,6 @@ export function SettingsScreen() {
             placeholderTextColor="#888"
             value={descripcion}
             onChangeText={setDescripcion}
-            blurOnSubmit={false}
-            returnKeyType="default"
           />
 
           <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
@@ -137,7 +140,7 @@ export function SettingsScreen() {
           </TouchableOpacity>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -156,6 +159,15 @@ const styles = StyleSheet.create({
   },
   incidentContainer: {
     marginTop: 10,
+    flex: 1,
+  },
+  loadingText: {
+    color: "#FFF",
+    textAlign: "center",
+  },
+  noIncidentsText: {
+    color: "#FFF",
+    textAlign: "center",
   },
   incidentItem: {
     backgroundColor: "#323639",
@@ -246,18 +258,17 @@ const styles = StyleSheet.create({
     borderColor: "#555",
   },
   textArea: {
-    height: 220,
+    height: 120,
     textAlignVertical: "top",
   },
   submitButton: {
     marginTop: 30,
-    backgroundColor: "transparent",
+    borderWidth: 2,
+    borderColor: "#9FC63B",
     paddingVertical: 10,
     paddingHorizontal: 40,
     borderRadius: 8,
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#9FC63B",
   },
   submitButtonText: {
     color: "#DFDFDF",
