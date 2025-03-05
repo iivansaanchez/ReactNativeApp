@@ -8,6 +8,7 @@ export function SettingsScreen() {
   const [numeroEquipo, setNumeroEquipo] = useState("");
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
+  const [estado, setEstado] = useState("");
   const [showIncidentForm, setShowIncidentForm] = useState(false);
 
   useEffect(() => {
@@ -39,8 +40,8 @@ export function SettingsScreen() {
       numeroEquipo,
       titulo,
       descripcion,
-      fecha: new Date().toISOString(),
       estado: "Pendiente",
+      fecha: new Date().toISOString(),
     };
 
     try {
@@ -61,6 +62,7 @@ export function SettingsScreen() {
             setNumeroEquipo("");
             setTitulo("");
             setDescripcion("");
+            setEstado("");
             setShowIncidentForm(false);
             fetchIncidencias(); // Recargar incidencias después de enviar una nueva
           },

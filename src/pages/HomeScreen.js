@@ -111,7 +111,7 @@ export function HomeScreen({ navigation }) {
       </TouchableOpacity>
       <View style={styles.overlay}>
         <View style={styles.userDetails}>
-          <Image source={require('../../assets/perfil.png')} style={[styles.userPhoto, { width: width * 0.15, height: width * 0.15, borderRadius: width * 0.08 }]} />
+          <Image source={require('../../assets/perfil.png')} style={[styles.userPhoto, { width: width * 0.15, height: width * 0.15, borderRadius: width * 0.08, borderWidth: 2, borderColor: '#9FC63B', marginTop: width * 0.01}]} />
           <View style={styles.userTextContainer}>
             <Text style={styles.publishedBy}>Publicado por</Text>
             <Text style={styles.userName}>{item.userNick || 'Cargando...'}</Text>

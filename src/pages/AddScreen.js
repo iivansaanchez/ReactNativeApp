@@ -1,4 +1,4 @@
-import { Alert,View, Text, TextInput, StyleSheet, TouchableOpacity, Image, Keyboard, TouchableWithoutFeedback  } from 'react-native';
+import { Alert,View, Text, TextInput, StyleSheet, TouchableOpacity, Image, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import Button from '../components/Button';
 import * as ImagePicker from 'expo-image-picker';
@@ -65,7 +65,7 @@ export function AddScreen({ navigation, route }) {
  // Subir imagen a Cloudinary
   const uploadToCloudinary = async (imageUri) => {
   const data = new FormData();
-  const cloudName = 'dr1zlgrdy';
+  const cloudName = 'ddjk8b4xr';
   const uploadPreset = 'appVedruna'; // Configurado en tu cuenta de Cloudinary
 
   // Adjuntar la imagen
@@ -126,12 +126,19 @@ const handleSubmit = async () => {
   try {
     // Subir imagen a Cloudinary
     await uploadToCloudinary(selectedImage);
+    
+    // Restablecer el formulario
+    setSelectedImage(null);
+    setTitulo('');
+    setDescripcion('');
+
     alert("Publicación realizada con éxito.");
   } catch (error) {
     console.error("Error al publicar:", error);
     alert("Hubo un error al realizar la publicación. Intenta nuevamente.");
   }
 };
+
 
   
 

@@ -8,6 +8,8 @@ import {
   Image,
   ScrollView,
   Alert,
+  TouchableWithoutFeedback,
+  Keyboard,
   useWindowDimensions
 } from 'react-native';
 
@@ -15,7 +17,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../utils/Firebase';
 import config from '../../config';
 
-export function RegisterScreen({navigation}) {
+export function RegisterScreen({ navigation }) {
   const { width } = useWindowDimensions();
 
   const [form, setForm] = useState({
@@ -83,40 +85,42 @@ export function RegisterScreen({navigation}) {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={[styles.imageContainer, { width: width * 0.9 }]}>
-        <Image
-          source={require('../../assets/formulario.png')}
-          style={styles.image}
-        />
-      </View>
+    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={[styles.imageContainer, { width: width * 0.9 }]}>
+          <Image
+            source={require('../../assets/formulario.png')}
+            style={styles.image}
+          />
+        </View>
 
-      <Text style={styles.title}>Completar los siguientes campos:</Text>
+        <Text style={styles.title}>Completar los siguientes campos:</Text>
 
-      {['email', 'password', 'confirmPassword', 'nick', 'name', 'lastName1', 'lastName2'].map((field, index) => (
-        <TextInput
-          key={index}
-          style={styles.input}
-          placeholder={
-            field === 'email' ? 'Introduzca su correo' :
-            field === 'password' ? 'Introduzca contraseña' :
-            field === 'confirmPassword' ? 'Repita contraseña' :
-            field === 'nick' ? 'Introduzca su nick' :
-            field === 'name' ? 'Introduzca su nombre' :
-            field === 'lastName1' ? 'Introduzca su primer apellido' : 'Introduzca su segundo apellido'
-          }
-          placeholderTextColor="#aaa"
-          value={form[field]}
-          onChangeText={(value) => handleInputChange(field, value)}
-          secureTextEntry={field.includes('password')}
-          keyboardType={field === 'email' ? 'email-address' : 'default'}
-        />
-      ))}
+        {['email', 'password', 'confirmPassword', 'nick', 'name', 'lastName1', 'lastName2'].map((field, index) => (
+          <TextInput
+            key={index}
+            style={styles.input}
+            placeholder={
+              field === 'email' ? 'Introduzca su correo' :
+              field === 'password' ? 'Introduzca contraseña' :
+              field === 'confirmPassword' ? 'Repita contraseña' :
+              field === 'nick' ? 'Introduzca su nick' :
+              field === 'name' ? 'Introduzca su nombre' :
+              field === 'lastName1' ? 'Introduzca su primer apellido' : 'Introduzca su segundo apellido'
+            }
+            placeholderTextColor="#aaa"
+            value={form[field]}
+            onChangeText={(value) => handleInputChange(field, value)}
+            secureTextEntry={field === 'password' || field === 'confirmPassword'}
+            keyboardType={field === 'email' ? 'email-address' : 'default'}
+          />
+        ))}
 
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-        <Text style={styles.submitButtonText}>FINALIZAR</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+          <Text style={styles.submitButtonText}>FINALIZAR</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </TouchableWithoutFeedback>
   );
 }
 
